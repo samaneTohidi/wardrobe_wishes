@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:wardrobe_wishes/screens/wish_screen.dart';
 
+import '../repositories/wish_database.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -13,8 +15,17 @@ String _sortBy = 'Last added';
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final AnimationController _fadeController;
   late final AnimationController _sizeController;
-  late final Animation<double> _fadeAnimation;
-  late final Animation<double> _sizeAnimation;
+
+  List<Category> _categories = [];
+
+  final _db = MyDatabase.instance;
+
+
+  void _updateCategories(List<Category> newCategories) {
+    setState(() {
+      _categories = newCategories;
+    });
+  }
 
   @override
   void initState() {
@@ -28,16 +39,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     )..repeat(reverse: true);
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeInOut,
-    );
+    _fetchCategories();
 
-    _sizeAnimation = CurvedAnimation(
-      parent: _sizeController,
-      curve: Curves.easeOut,
-    );
     super.initState();
+
   }
 
   @override
@@ -47,16 +52,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Future<void> _fetchCategories() async {
+    final categories = await _db.getCategories();
+    setState(() {
+      _categories = categories;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     Size screenSize = MediaQuery.of(context).size;
     double sortHeight = screenSize.height * 0.1;
     double wishListHeight = screenSize.height * 0.8;
-    final List<Map<String, String>> items = [
-      {"name": "Boot", "image": "boot.png"},
-      {"name": "t_shirt", "image": "t_shirt.png"},
-      {"name": "Boot", "image": "boot.png"},
-    ];
+
     return Scaffold(
       body: Container(
           decoration: BoxDecoration(color: Colors.teal[600]),
@@ -83,23 +91,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Container(
                 height: wishListHeight,
                 child: ListView.builder(
-                    itemCount: items.length,
+                    itemCount: _categories.length,
                     itemBuilder: (context, index) {
                       return Card(
                         margin: const EdgeInsets.all(8),
                         child: ListTile(
                           trailing: Image.asset(
-                            'assets/images/${items[index]['image']!}',
+                            'assets/images/t_shirt.png',
                             fit: BoxFit.fill,
                           ),
-                          title: Text(items[index]['name']!),
+                          title: Text(_categories[index].name),
                         ),
                       );
                     }),
               ),
-              Container(
+               Container(
                 child: FloatingActionButton(
-                  child: Icon(Icons.add),
+                  child: const Icon(Icons.add),
                   onPressed: () {
                     showWishModalBottomSheet(context);
                   },
@@ -110,4 +118,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           )),
     );
   }
+
+  void showWishModalBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return FractionallySizedBox(
+          widthFactor: 0.9,
+          heightFactor: 0.9,
+          child: WishScreen(cats: _categories,
+              onCatsUpdated: _updateCategories),
+        );
+      },
+    );
+  }
 }
+

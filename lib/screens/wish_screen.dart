@@ -1,12 +1,18 @@
-import 'package:flutter/cupertino.dart';
+
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:wardrobe_wishes/repositories/wish_database.dart';
 import 'package:wardrobe_wishes/screens/widgets/cat_dropdown_menu.dart';
 import 'package:wardrobe_wishes/screens/widgets/image_sheet.dart';
 
+
 class WishScreen extends StatefulWidget {
-  const WishScreen({super.key});
+  final List<Category> cats;
+  final ValueChanged<List<Category>> onCatsUpdated;
+
+  const WishScreen({super.key, required this.cats , required this.onCatsUpdated});
 
   @override
   State<WishScreen> createState() => _WishScreenState();
@@ -14,11 +20,13 @@ class WishScreen extends StatefulWidget {
 
 class _WishScreenState extends State<WishScreen> {
   late TextEditingController _titleController;
+  late TextEditingController _categoryController;
+  late TextEditingController _imageController;
   late TextEditingController _linkController;
   late TextEditingController _noteController;
   late GlobalKey<FormState> _formKey;
-
-
+  final _db = MyDatabase.instance;
+  CatLabel? selectedCat;
 
 
   @override
@@ -26,6 +34,8 @@ class _WishScreenState extends State<WishScreen> {
     _titleController = TextEditingController();
     _linkController = TextEditingController();
     _noteController= TextEditingController();
+    _categoryController = TextEditingController();
+    _imageController = TextEditingController();
     _formKey = GlobalKey<FormState>();
     super.initState();
   }
@@ -35,6 +45,8 @@ class _WishScreenState extends State<WishScreen> {
     _titleController.dispose();
     _linkController.dispose();
     _noteController.dispose();
+    _categoryController.dispose();
+    _imageController.dispose();
     super.dispose();
   }
 
@@ -42,6 +54,30 @@ class _WishScreenState extends State<WishScreen> {
     final Uri? uri = Uri.tryParse(url);
     return uri != null && (uri.isScheme('http') || uri.isScheme('https'));
   }
+  void _saveData() async {
+
+    final name = _titleController.text;
+    final image = _imageController.text;
+    final link = _linkController.text;
+    final note = _noteController.text;
+    final cat = _categoryController.text;
+    final newCategory = CategoriesCompanion(
+      name: drift.Value(cat),
+    );
+
+    final newItem = ItemsCompanion(
+      name: drift.Value(name),
+      image: drift.Value(image),
+      link: drift.Value(link),
+      note: drift.Value(note),
+      categoryId: const drift.Value(0),
+    );
+
+    await _db.addCategoryWithItems(newCategory, [newItem]);
+    final updatedCategories = await _db.getCategories();
+    widget.onCatsUpdated(updatedCategories);
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -50,18 +86,19 @@ class _WishScreenState extends State<WishScreen> {
 
     return Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Container(
+        child:  Container(
           child: Column(
             children: [
               Container(
                 height: arrowDownHeight,
                 alignment: Alignment.centerRight,
                 child: IconButton(
-                  icon: Icon(Icons.keyboard_arrow_down_outlined), onPressed: () {
+                  icon: const Icon(Icons.keyboard_arrow_down_outlined), onPressed: () {
                   Navigator.pop(context);
                 },
                 ),
               ),
+
               Expanded(
               child:
               Column(
@@ -99,14 +136,35 @@ class _WishScreenState extends State<WishScreen> {
                           );
                         },
                       ),
-                      CatDropdownMenu()
+                DropdownMenu<CatLabel>(
+                    initialSelection: CatLabel.clothes,
+                    controller: _categoryController,
+                    requestFocusOnTap: true,
+                    onSelected: (CatLabel? cat) {
+                      setState(() {
+                        selectedCat = cat;
+                      });
+                    },
+                    dropdownMenuEntries: CatLabel.values.map ((CatLabel cat ) {
+                      return DropdownMenuEntry<CatLabel>(
+                        value: cat,
+                        label: cat.name,
+                        enabled: cat.name != 'clothes',
+                        leadingIcon: Icon(cat.icon),
+                        style: MenuItemButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 1.0), // Adjust padding
+
+                        ),
+                      );
+                    }).toList()
+                )
                     ],
                   ),
                   SizedBox(height: 12),
                   // Add Image
                   Column(
                     children: [
-                      Row(
+                       const Row(
                         children: [
                           Icon(
                             size: 24,
@@ -241,6 +299,7 @@ class _WishScreenState extends State<WishScreen> {
               ),
               FilledButton(
                   onPressed: (){
+                    _saveData();
                     Navigator.pop(context);
                   }, child: const Text('Make a wish'))
             ],
@@ -251,18 +310,4 @@ class _WishScreenState extends State<WishScreen> {
     );
   }
 
-}
-
-void showWishModalBottomSheet(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    builder: (BuildContext context) {
-      return FractionallySizedBox(
-        widthFactor: 0.9,
-        heightFactor: 0.9,
-        child: WishScreen(),
-      );
-    },
-  );
 }
