@@ -118,22 +118,7 @@ class _WishScreenState extends State<WishScreen> {
                         ),
                         textAlign: TextAlign.center,
                         onSubmitted: (String value) async {
-                          await showDialog(context: context, builder: (BuildContext context){
-                              return AlertDialog(
-                                title: const Text('Thanks!'),
-                                content: Text(
-                                    'You typed "$value", which has length ${value.characters.length}.'),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text('OK'),
-                                  ),
-                                ],
-                              );
-                          },
-                          );
+
                         },
                       ),
                 DropdownMenu<CatLabel>(
@@ -272,22 +257,7 @@ class _WishScreenState extends State<WishScreen> {
                         ),
                         textAlign: TextAlign.start,
                         onSubmitted: (String value) async {
-                          await showDialog(context: context, builder: (BuildContext context){
-                            return AlertDialog(
-                              title: const Text('Thanks!'),
-                              content: Text(
-                                  'You typed "$value", which has length ${value.characters.length}.'),
-                              actions: <Widget>[
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text('OK'),
-                                ),
-                              ],
-                            );
-                          },
-                          );
+
                         },
                       ),
 

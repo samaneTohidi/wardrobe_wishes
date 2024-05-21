@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 import 'dart:io';
 import 'package:drift/drift.dart' as drift;
 
+import '../screens/widgets/sort_sheet.dart';
+
 
 part 'wish_database.g.dart';
 
@@ -14,6 +16,7 @@ class Categories extends Table {
 }
 
 class Items extends Table {
+
   IntColumn get id => integer().autoIncrement()();
 
   IntColumn get categoryId => integer().customConstraint('NOT NULL REFERENCES categories(id)')();
@@ -25,6 +28,9 @@ class Items extends Table {
   TextColumn get link => text().nullable()();
 
   TextColumn get note => text().nullable()();
+
+  BoolColumn get isDone => boolean().withDefault( Constant(false))();
+
 }
 
 @DriftDatabase(tables: [Categories, Items])
@@ -43,16 +49,51 @@ class MyDatabase extends _$MyDatabase {
 
   }
 
+  Future<List<Item>> getItemsByCategoryIdAndDoneStatus(int categoryId, bool isDone) async {
+    return (select(items)
+      ..where((tbl) => tbl.categoryId.equals(categoryId))
+      ..where((tbl) => tbl.isDone.equals(isDone)))
+        .get();
+  }
+
   Future<int> addItem(ItemsCompanion item) async {
     return into(items).insert(item);
+  }
+
+  Future<void> deleteItem(int itemId) async {
+    await (delete(items)..where((tbl) => tbl.id.equals(itemId))).go();
   }
 
   Future<int> addCategory(CategoriesCompanion category) async {
     return into(categories).insert(category);
   }
 
+  Future<void> deleteCategory(int categoryId) async {
+    await (delete(categories)..where((tbl) => tbl.id.equals(categoryId))).go();
+  }
+
   Future<Category?> getCategoryByName(String name) async {
     return (select(categories)..where((tbl) => tbl.name.equals(name))).getSingleOrNull();
+  }
+
+  Future<List<Item>> getItemsByCategoryId(int categoryId) async {
+    return (select(items)..where((tbl) => tbl.categoryId.equals(categoryId))).get();
+  }
+
+  Future<List<Category>> getCategoriesSortedBy(SortData sortBy) async {
+    final query = select(categories);
+    switch (sortBy) {
+      case SortData.firstAdded:
+        query.orderBy([(t) => OrderingTerm(expression: t.id)]);
+        break;
+      case SortData.lastAdded:
+        query.orderBy([(t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc)]);
+        break;
+      case SortData.alphabetical:
+        query.orderBy([(t) => OrderingTerm(expression: t.name)]);
+        break;
+    }
+    return query.get();
   }
 
   Future<void> addCategoryWithItems(CategoriesCompanion category, List<ItemsCompanion> items) async {
@@ -71,6 +112,12 @@ class MyDatabase extends _$MyDatabase {
       }
     });
   }
+
+  Future<void> updateItemStatus(int itemId, bool isDone) async {
+    await (update(items)..where((tbl) => tbl.id.equals(itemId)))
+        .write(ItemsCompanion(isDone: Value(isDone)));
+  }
+
 
   @override
   int get schemaVersion => 1;

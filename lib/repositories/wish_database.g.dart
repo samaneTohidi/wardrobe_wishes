@@ -230,9 +230,19 @@ class $ItemsTable extends Items with drift.TableInfo<$ItemsTable, Item> {
   late final drift.GeneratedColumn<String> note = drift.GeneratedColumn<String>(
       'note', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const drift.VerificationMeta _isDoneMeta =
+      const drift.VerificationMeta('isDone');
+  @override
+  late final drift.GeneratedColumn<bool> isDone = drift.GeneratedColumn<bool>(
+      'is_done', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_done" IN (0, 1))'),
+      defaultValue: drift.Constant(false));
   @override
   List<drift.GeneratedColumn> get $columns =>
-      [id, categoryId, name, image, link, note];
+      [id, categoryId, name, image, link, note, isDone];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -272,6 +282,10 @@ class $ItemsTable extends Items with drift.TableInfo<$ItemsTable, Item> {
       context.handle(
           _noteMeta, note.isAcceptableOrUnknown(data['note']!, _noteMeta));
     }
+    if (data.containsKey('is_done')) {
+      context.handle(_isDoneMeta,
+          isDone.isAcceptableOrUnknown(data['is_done']!, _isDoneMeta));
+    }
     return context;
   }
 
@@ -293,6 +307,8 @@ class $ItemsTable extends Items with drift.TableInfo<$ItemsTable, Item> {
           .read(DriftSqlType.string, data['${effectivePrefix}link']),
       note: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}note']),
+      isDone: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_done'])!,
     );
   }
 
@@ -309,13 +325,15 @@ class Item extends drift.DataClass implements drift.Insertable<Item> {
   final String? image;
   final String? link;
   final String? note;
+  final bool isDone;
   const Item(
       {required this.id,
       required this.categoryId,
       required this.name,
       this.image,
       this.link,
-      this.note});
+      this.note,
+      required this.isDone});
   @override
   Map<String, drift.Expression> toColumns(bool nullToAbsent) {
     final map = <String, drift.Expression>{};
@@ -331,6 +349,7 @@ class Item extends drift.DataClass implements drift.Insertable<Item> {
     if (!nullToAbsent || note != null) {
       map['note'] = drift.Variable<String>(note);
     }
+    map['is_done'] = drift.Variable<bool>(isDone);
     return map;
   }
 
@@ -348,6 +367,7 @@ class Item extends drift.DataClass implements drift.Insertable<Item> {
       note: note == null && nullToAbsent
           ? const drift.Value.absent()
           : drift.Value(note),
+      isDone: drift.Value(isDone),
     );
   }
 
@@ -361,6 +381,7 @@ class Item extends drift.DataClass implements drift.Insertable<Item> {
       image: serializer.fromJson<String?>(json['image']),
       link: serializer.fromJson<String?>(json['link']),
       note: serializer.fromJson<String?>(json['note']),
+      isDone: serializer.fromJson<bool>(json['isDone']),
     );
   }
   @override
@@ -373,6 +394,7 @@ class Item extends drift.DataClass implements drift.Insertable<Item> {
       'image': serializer.toJson<String?>(image),
       'link': serializer.toJson<String?>(link),
       'note': serializer.toJson<String?>(note),
+      'isDone': serializer.toJson<bool>(isDone),
     };
   }
 
@@ -382,7 +404,8 @@ class Item extends drift.DataClass implements drift.Insertable<Item> {
           String? name,
           drift.Value<String?> image = const drift.Value.absent(),
           drift.Value<String?> link = const drift.Value.absent(),
-          drift.Value<String?> note = const drift.Value.absent()}) =>
+          drift.Value<String?> note = const drift.Value.absent(),
+          bool? isDone}) =>
       Item(
         id: id ?? this.id,
         categoryId: categoryId ?? this.categoryId,
@@ -390,6 +413,7 @@ class Item extends drift.DataClass implements drift.Insertable<Item> {
         image: image.present ? image.value : this.image,
         link: link.present ? link.value : this.link,
         note: note.present ? note.value : this.note,
+        isDone: isDone ?? this.isDone,
       );
   @override
   String toString() {
@@ -399,13 +423,15 @@ class Item extends drift.DataClass implements drift.Insertable<Item> {
           ..write('name: $name, ')
           ..write('image: $image, ')
           ..write('link: $link, ')
-          ..write('note: $note')
+          ..write('note: $note, ')
+          ..write('isDone: $isDone')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, categoryId, name, image, link, note);
+  int get hashCode =>
+      Object.hash(id, categoryId, name, image, link, note, isDone);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -415,7 +441,8 @@ class Item extends drift.DataClass implements drift.Insertable<Item> {
           other.name == this.name &&
           other.image == this.image &&
           other.link == this.link &&
-          other.note == this.note);
+          other.note == this.note &&
+          other.isDone == this.isDone);
 }
 
 class ItemsCompanion extends drift.UpdateCompanion<Item> {
@@ -425,6 +452,7 @@ class ItemsCompanion extends drift.UpdateCompanion<Item> {
   final drift.Value<String?> image;
   final drift.Value<String?> link;
   final drift.Value<String?> note;
+  final drift.Value<bool> isDone;
   const ItemsCompanion({
     this.id = const drift.Value.absent(),
     this.categoryId = const drift.Value.absent(),
@@ -432,6 +460,7 @@ class ItemsCompanion extends drift.UpdateCompanion<Item> {
     this.image = const drift.Value.absent(),
     this.link = const drift.Value.absent(),
     this.note = const drift.Value.absent(),
+    this.isDone = const drift.Value.absent(),
   });
   ItemsCompanion.insert({
     this.id = const drift.Value.absent(),
@@ -440,6 +469,7 @@ class ItemsCompanion extends drift.UpdateCompanion<Item> {
     this.image = const drift.Value.absent(),
     this.link = const drift.Value.absent(),
     this.note = const drift.Value.absent(),
+    this.isDone = const drift.Value.absent(),
   })  : categoryId = drift.Value(categoryId),
         name = drift.Value(name);
   static drift.Insertable<Item> custom({
@@ -449,6 +479,7 @@ class ItemsCompanion extends drift.UpdateCompanion<Item> {
     drift.Expression<String>? image,
     drift.Expression<String>? link,
     drift.Expression<String>? note,
+    drift.Expression<bool>? isDone,
   }) {
     return drift.RawValuesInsertable({
       if (id != null) 'id': id,
@@ -457,6 +488,7 @@ class ItemsCompanion extends drift.UpdateCompanion<Item> {
       if (image != null) 'image': image,
       if (link != null) 'link': link,
       if (note != null) 'note': note,
+      if (isDone != null) 'is_done': isDone,
     });
   }
 
@@ -466,7 +498,8 @@ class ItemsCompanion extends drift.UpdateCompanion<Item> {
       drift.Value<String>? name,
       drift.Value<String?>? image,
       drift.Value<String?>? link,
-      drift.Value<String?>? note}) {
+      drift.Value<String?>? note,
+      drift.Value<bool>? isDone}) {
     return ItemsCompanion(
       id: id ?? this.id,
       categoryId: categoryId ?? this.categoryId,
@@ -474,6 +507,7 @@ class ItemsCompanion extends drift.UpdateCompanion<Item> {
       image: image ?? this.image,
       link: link ?? this.link,
       note: note ?? this.note,
+      isDone: isDone ?? this.isDone,
     );
   }
 
@@ -498,6 +532,9 @@ class ItemsCompanion extends drift.UpdateCompanion<Item> {
     if (note.present) {
       map['note'] = drift.Variable<String>(note.value);
     }
+    if (isDone.present) {
+      map['is_done'] = drift.Variable<bool>(isDone.value);
+    }
     return map;
   }
 
@@ -509,7 +546,8 @@ class ItemsCompanion extends drift.UpdateCompanion<Item> {
           ..write('name: $name, ')
           ..write('image: $image, ')
           ..write('link: $link, ')
-          ..write('note: $note')
+          ..write('note: $note, ')
+          ..write('isDone: $isDone')
           ..write(')'))
         .toString();
   }
@@ -635,6 +673,7 @@ typedef $$ItemsTableInsertCompanionBuilder = ItemsCompanion Function({
   drift.Value<String?> image,
   drift.Value<String?> link,
   drift.Value<String?> note,
+  drift.Value<bool> isDone,
 });
 typedef $$ItemsTableUpdateCompanionBuilder = ItemsCompanion Function({
   drift.Value<int> id,
@@ -643,6 +682,7 @@ typedef $$ItemsTableUpdateCompanionBuilder = ItemsCompanion Function({
   drift.Value<String?> image,
   drift.Value<String?> link,
   drift.Value<String?> note,
+  drift.Value<bool> isDone,
 });
 
 class $$ItemsTableTableManager extends drift.RootTableManager<
@@ -670,6 +710,7 @@ class $$ItemsTableTableManager extends drift.RootTableManager<
             drift.Value<String?> image = const drift.Value.absent(),
             drift.Value<String?> link = const drift.Value.absent(),
             drift.Value<String?> note = const drift.Value.absent(),
+            drift.Value<bool> isDone = const drift.Value.absent(),
           }) =>
               ItemsCompanion(
             id: id,
@@ -678,6 +719,7 @@ class $$ItemsTableTableManager extends drift.RootTableManager<
             image: image,
             link: link,
             note: note,
+            isDone: isDone,
           ),
           getInsertCompanionBuilder: ({
             drift.Value<int> id = const drift.Value.absent(),
@@ -686,6 +728,7 @@ class $$ItemsTableTableManager extends drift.RootTableManager<
             drift.Value<String?> image = const drift.Value.absent(),
             drift.Value<String?> link = const drift.Value.absent(),
             drift.Value<String?> note = const drift.Value.absent(),
+            drift.Value<bool> isDone = const drift.Value.absent(),
           }) =>
               ItemsCompanion.insert(
             id: id,
@@ -694,6 +737,7 @@ class $$ItemsTableTableManager extends drift.RootTableManager<
             image: image,
             link: link,
             note: note,
+            isDone: isDone,
           ),
         ));
 }
@@ -738,6 +782,11 @@ class $$ItemsTableFilterComposer
       builder: (column, joinBuilders) =>
           drift.ColumnFilters(column, joinBuilders: joinBuilders));
 
+  drift.ColumnFilters<bool> get isDone => $state.composableBuilder(
+      column: $state.table.isDone,
+      builder: (column, joinBuilders) =>
+          drift.ColumnFilters(column, joinBuilders: joinBuilders));
+
   $$CategoriesTableFilterComposer get categoryId {
     final $$CategoriesTableFilterComposer composer = $state.composerBuilder(
         composer: this,
@@ -776,6 +825,11 @@ class $$ItemsTableOrderingComposer
 
   drift.ColumnOrderings<String> get note => $state.composableBuilder(
       column: $state.table.note,
+      builder: (column, joinBuilders) =>
+          drift.ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  drift.ColumnOrderings<bool> get isDone => $state.composableBuilder(
+      column: $state.table.isDone,
       builder: (column, joinBuilders) =>
           drift.ColumnOrderings(column, joinBuilders: joinBuilders));
 

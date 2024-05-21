@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:wardrobe_wishes/screens/detail_screen.dart';
+import 'package:wardrobe_wishes/screens/widgets/sort_sheet.dart';
 import 'package:wardrobe_wishes/screens/wish_screen.dart';
 
 import '../repositories/wish_database.dart';
@@ -10,13 +12,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-String _sortBy = 'Last added';
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final AnimationController _fadeController;
   late final AnimationController _sizeController;
 
   List<Category> _categories = [];
+  SortData? _sortBy = SortData.lastAdded;
 
   final _db = MyDatabase.instance;
 
@@ -53,10 +55,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _fetchCategories() async {
-    final categories = await _db.getCategories();
+    final categories = await _db.getCategoriesSortedBy(_sortBy!);
     setState(() {
       _categories = categories;
     });
+  }
+
+  void _handleCategoryDeleted() {
+    _fetchCategories();
+  }
+
+  void _handleSort(SortData? newSort) {
+    setState(() {
+      _sortBy = newSort;
+    });
+    _fetchCategories();
   }
 
   @override
@@ -78,12 +91,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     color: Colors.white,
                     onPressed: () {
                       setState(() {
-                        _sortBy = 'First added';
+                        showSortModalBottomSheet(context, _sortBy, _handleSort);
                       });
                     },
                   ),
                   Text(
-                    _sortBy,
+                    _sortBy!.description ?? '',
                     style: const TextStyle(fontSize: 14, color: Colors.white),
                   ),
                 ]),
@@ -101,6 +114,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             fit: BoxFit.fill,
                           ),
                           title: Text(_categories[index].name),
+                          onTap: (){
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context){
+                                  return DetailScreen( cat: _categories[index], onCategoryDeleted: _handleCategoryDeleted,);
+                                })
+                            );
+                          },
                         ),
                       );
                     }),
