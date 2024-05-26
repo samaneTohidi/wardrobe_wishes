@@ -147,24 +147,24 @@ class _WishScreenState extends State<WishScreen> {
                   ),
                   SizedBox(height: 12),
                   // Add Image
-                  Column(
-                    children: [
-                       const Row(
-                        children: [
-                          Icon(
-                            size: 24,
-                            Icons.image_outlined,
-                          ),
-                          SizedBox(width: 8),
-                          Text('Image')
-                        ],
-                      ),
-                     IconButton.outlined(onPressed: (){
-                       showImageModalBottomSheet(context);
-                     }, icon: Icon(Icons.add))
-
-                    ],
-                  ),
+                  // Column(
+                  //   children: [
+                  //      const Row(
+                  //       children: [
+                  //         Icon(
+                  //           size: 24,
+                  //           Icons.image_outlined,
+                  //         ),
+                  //         SizedBox(width: 8),
+                  //         Text('Image')
+                  //       ],
+                  //     ),
+                  //    IconButton.outlined(onPressed: (){
+                  //      showImageModalBottomSheet(context);
+                  //    }, icon: Icon(Icons.add))
+                  //
+                  //   ],
+                  // ),
                   SizedBox(height: 12),
                   // Add Link
                   Column(

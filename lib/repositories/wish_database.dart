@@ -49,11 +49,23 @@ class MyDatabase extends _$MyDatabase {
 
   }
 
-  Future<List<Item>> getItemsByCategoryIdAndDoneStatus(int categoryId, bool isDone) async {
-    return (select(items)
+  Future<List<Item>> getItemsByCategoryIdAndDoneStatus(int categoryId, bool isDone, SortData sortBy) async {
+    final query =  select(items)
       ..where((tbl) => tbl.categoryId.equals(categoryId))
-      ..where((tbl) => tbl.isDone.equals(isDone)))
-        .get();
+      ..where((tbl) => tbl.isDone.equals(isDone));
+
+    switch (sortBy) {
+      case SortData.firstAdded:
+        query.orderBy([(t) => OrderingTerm(expression: t.id)]);
+        break;
+      case SortData.lastAdded:
+        query.orderBy([(t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc)]);
+        break;
+      case SortData.alphabetical:
+        query.orderBy([(t) => OrderingTerm(expression: t.name)]);
+        break;
+    }
+    return query.get();
   }
 
   Future<int> addItem(ItemsCompanion item) async {
